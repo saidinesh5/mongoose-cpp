@@ -5,6 +5,7 @@
 #endif
 #include <stdlib.h>
 #include <signal.h>
+#include <cassert>
 
 #include "Controller.h"
 #include "Request.h"

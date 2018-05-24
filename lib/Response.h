@@ -4,7 +4,8 @@
 #include <atomic>
 #include <map>
 #include <string>
-#include "mongoose.h"
+
+struct mg_connection;;
 
 #ifdef HAS_JSON11
 #include <json11.hpp>

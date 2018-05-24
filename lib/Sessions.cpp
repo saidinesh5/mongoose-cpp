@@ -1,3 +1,5 @@
+#include <cassert>
+
 #include "Sessions.h"
 #include "Utils.h"
 
