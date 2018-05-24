@@ -139,7 +139,11 @@ namespace Mongoose
             for(int i = 0; i < count; i++)
             {
                 struct yuarel_param p = params[i];
-                mVariables[p.key] = p.val;
+                int keyLen = strnlen(p.key, data.size());
+                int valLen = strnlen(p.val, data.size() - keyLen);
+                std::string key = std::string(p.key, keyLen);
+                std::string value = std::string(p.val, valLen);
+                mVariables[key] = value;
             }
         }
 
