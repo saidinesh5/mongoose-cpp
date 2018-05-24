@@ -1,0 +1,18 @@
+#pragma once
+
+#include <string>
+
+namespace Mongoose
+{
+    const std::string VERSION_STRING = "@mongoose_VERSION_STRING@";
+    const std::string VERSION_STRING_FULL = "@mongoose_VERSION_STRING_FULL@";
+    const std::string VERSION = "@mongoose_VERSION@";
+
+    const int VERSION_MAJOR = @mongoose_VERSION_MAJOR@;
+    const int VERSION_MINOR = @mongoose_VERSION_MINOR@;
+    const int VERSION_PATCH = @mongoose_VERSION_PATCH@;
+    
+    const std::string VERSION_TWEAK = "@mongoose_VERSION_TWEAK@";
+    const std::string VERSION_AHEAD = "@mongoose_VERSION_AHEAD@";
+    const std::string VERSION_GIT_SHA = "@mongoose_VERSION_GIT_SHA@";
+}

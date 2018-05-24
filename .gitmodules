@@ -1,0 +1,6 @@
+[submodule "vendor/mongoose"]
+	path = vendor/mongoose
+	url = https://github.com/saidinesh5/mongoose/
+[submodule "vendor/libyuarel"]
+	path = vendor/libyuarel
+	url = https://github.com/jacketizer/libyuarel
