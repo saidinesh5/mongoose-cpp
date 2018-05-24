@@ -36,7 +36,6 @@ set(HEADERS
     lib/Server.h
     lib/Session.h
     lib/Sessions.h
-    vendor/mongoose/mongoose.h
 )
 
 set(SOURCES

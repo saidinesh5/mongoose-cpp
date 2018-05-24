@@ -8,7 +8,9 @@
 #ifdef ENABLE_REGEX_URL
 #include <regex>
 #endif
-#include <mongoose.h>
+
+struct mg_connection;
+struct http_message;
 
 /**
  * Request is a wrapper for the clients requests

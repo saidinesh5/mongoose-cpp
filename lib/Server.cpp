@@ -2,6 +2,8 @@
 #include <iostream>
 #include <algorithm>
 
+#include <mongoose.h>
+
 #include "Controller.h"
 #include "Request.h"
 #include "Response.h"
@@ -22,6 +24,8 @@ struct MultipartData
     std::string currentVariableData;
     std::vector<Request::MultipartEntity> multipartEntities;
 };
+
+static struct mg_serve_http_opts sHttpOptions = {0};
 
 /**
  * @brief Server::ev_handler
@@ -83,8 +87,7 @@ void Server::ev_handler(struct mg_connection *c, int ev, void *p, void *ud)
         else
         {
             //Else, simply let mongoose handle it - like a normal http server
-            server->updateHttpOptions();
-            mg_serve_http(c, (struct http_message *) p, server->mHttpOptions);
+            mg_serve_http(c, (struct http_message *) p, sHttpOptions);
         }
 
         break;
@@ -245,12 +248,14 @@ void Server::ev_handler(struct mg_connection *c, int ev, void *p, void *ud)
 
 Server::Server(const char *address, const char *documentRoot):
     mIsRunning(false),
-    mBindAddress(address),
-    mDocumentRoot(documentRoot),
-    mEnableDirectoryListing("yes"),
     mUploadSizeLimit(1024*1024*100),
     mTmpDir("/tmp")
 {
+    memset(&sHttpOptions, 0, sizeof(sHttpOptions));
+    setBindAddress(address);
+    setDocumentRoot(documentRoot);
+    setIndexFiles("index.html");
+    setDirectoryListingEnabled(true);
 }
 
 Server::~Server()
@@ -263,13 +268,13 @@ bool Server::start()
 
     if (!mIsRunning)
     {
-        mg_mgr_init(&mManager, this);
+        mManager = new (struct mg_mgr);
+        mg_mgr_init(mManager, this);
 
         mRequests = 0;
         mStartTime = Utils::getTime();
-        updateHttpOptions();
 
-        mConnection = mg_bind(&mManager,
+        mConnection = mg_bind(mManager,
                               mBindAddress.c_str(),
                               ev_handler,
                               this);
@@ -283,8 +288,10 @@ bool Server::start()
 
     if (mConnection == nullptr)
     {
-        mg_mgr_free(&mManager);
+        mg_mgr_free(mManager);
         mIsRunning = false;
+        delete mManager;
+        mManager = nullptr;
         std::cerr << "Error, unable to start server" << std::endl;
     }
 
@@ -295,7 +302,7 @@ void Server::poll(int duration)
 {
     if (mIsRunning)
     {
-        mg_mgr_poll(&mManager, duration);
+        mg_mgr_poll(mManager, duration);
     }
 }
 
@@ -303,7 +310,9 @@ void Server::stop()
 {
     if (mIsRunning)
     {
-        mg_mgr_free(&mManager);
+        mg_mgr_free(mManager);
+        delete mManager;
+        mManager = nullptr;
         mIsRunning = false;
     }
 }
@@ -387,17 +396,17 @@ size_t Server::uploadSizeLimit() const
     return mUploadSizeLimit;
 }
 
-void Server::setUploadFileSizeLimit(size_t limit)
+void Server::setUploadSizeLimit(size_t limit)
 {
     mUploadSizeLimit = limit;
 }
 
-string Server::bindAddress() const
+std::string Server::bindAddress() const
 {
     return mBindAddress;
 }
 
-void Server::setBindAddress(int address)
+void Server::setBindAddress(const string &address)
 {
     mBindAddress = address;
 }
@@ -410,6 +419,7 @@ bool Server::directoryListingEnabled() const
 void Server::setDirectoryListingEnabled(bool value)
 {
     mEnableDirectoryListing = value? "yes" : "no";
+    sHttpOptions.enable_directory_listing = mEnableDirectoryListing.c_str();
 }
 
 string Server::documentRoot() const
@@ -420,6 +430,7 @@ string Server::documentRoot() const
 void Server::setDocumentRoot(const string &root)
 {
     mDocumentRoot = root;
+    sHttpOptions.document_root = mDocumentRoot.c_str();
 }
 
 string Server::indexFiles() const
@@ -430,6 +441,7 @@ string Server::indexFiles() const
 void Server::setIndexFiles(const string &files)
 {
     mIndexFiles = files;
+    sHttpOptions.index_files = mIndexFiles.c_str();
 }
 
 string Server::authDomain() const
@@ -440,6 +452,7 @@ string Server::authDomain() const
 void Server::setAuthDomain(const string &domain)
 {
     mAuthDomain = domain;
+    sHttpOptions.auth_domain = mAuthDomain.c_str();
 }
 
 string Server::basicAuthUsername() const
@@ -457,7 +470,7 @@ string Server::basicAuthPassword() const
     return mBasicAuthPassword;
 }
 
-void Server::setBasicAuthPassword(string password)
+void Server::setBasicAuthPassword(const string &password)
 {
     mBasicAuthPassword = password;
 }
@@ -475,6 +488,7 @@ string Server::ipAccessControlList() const
 void Server::setIpAccessControlList(const string &acl)
 {
     mIpAccessControlList = acl;
+    sHttpOptions.ip_acl = mIpAccessControlList.c_str();
 }
 
 string Server::hiddenFilePattern() const
@@ -485,6 +499,7 @@ string Server::hiddenFilePattern() const
 void Server::setHiddenFilePattern(const string &pattern)
 {
     mHiddenFilePattern = pattern;
+    sHttpOptions.hidden_file_pattern = mHiddenFilePattern.c_str();
 }
 
 string Server::extraHeaders() const
@@ -492,7 +507,7 @@ string Server::extraHeaders() const
     return mExtraHeaders;
 }
 
-void Server::setExtraHeaders(string headers)
+void Server::setExtraHeaders(const string &headers)
 {
     mExtraHeaders = headers;
 }
@@ -505,17 +520,6 @@ string Server::tmpDir() const
 void Server::setTmpDir(const string &tmpDir)
 {
     mTmpDir = tmpDir;
-}
-
-void Server::updateHttpOptions()
-{
-    memset(&mHttpOptions, 0, sizeof(mHttpOptions));
-
-    mHttpOptions.document_root = mDocumentRoot.c_str();
-    mHttpOptions.enable_directory_listing = mEnableDirectoryListing.c_str();
-    mHttpOptions.index_files = mIndexFiles.c_str();
-    mHttpOptions.auth_domain = mAuthDomain.c_str();
-    mHttpOptions.extra_headers = mExtraHeaders.c_str();
 }
 
 void Server::printStats()

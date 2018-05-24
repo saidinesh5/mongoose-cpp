@@ -5,8 +5,9 @@
 #include <map>
 #include <memory>
 #include <vector>
-#include <mongoose.h>
 
+struct mg_connection;
+struct mg_mgr;
 
 /**
  * Wrapper for the Mongoose server
@@ -24,7 +25,7 @@ public:
      * @param bindAddress something like ":80", "0.0.0.0:80",  etc...
      * @param documentRoot Path to serve files from.
      */
-    Server(const char *bindAddress = ":80", const char *documentRoot = "www");
+    Server(const char *bindAddress = ":8080", const char *documentRoot = "www");
     virtual ~Server();
 
     /**
@@ -78,10 +79,10 @@ public:
     void setAllowMultipleClients(bool value);
 
     size_t uploadSizeLimit() const;
-    void setUploadFileSizeLimit(size_t limit);
+    void setUploadSizeLimit(size_t limit);
 
     std::string bindAddress() const;
-    void setBindAddress(int address);
+    void setBindAddress(const std::string& address);
 
     bool directoryListingEnabled() const;
     void setDirectoryListingEnabled(bool value);
@@ -99,7 +100,7 @@ public:
     void setBasicAuthUsername(const std::string& user);
 
     std::string basicAuthPassword() const;
-    void setBasicAuthPassword(std::string password);
+    void setBasicAuthPassword(const std::string& password);
 
     bool requiresBasicAuthentication() const;
 
@@ -110,7 +111,7 @@ public:
     void setHiddenFilePattern(const std::string& pattern);
 
     std::string extraHeaders() const;
-    void setExtraHeaders(std::string headers);
+    void setExtraHeaders(const std::string& headers);
 
     std::string tmpDir() const;
     void setTmpDir(const std::string& tmpDir);
@@ -120,12 +121,9 @@ private:
 
     bool handleRequest(std::weak_ptr<Request> request, std::weak_ptr<Response> response);
 
-    void updateHttpOptions();
-
     bool mIsRunning;
-    struct mg_mgr mManager;
+    struct mg_mgr *mManager{nullptr};
     struct mg_connection *mConnection{nullptr};
-    struct mg_serve_http_opts mHttpOptions;
 
     //Internals
     std::map<struct mg_connection*, std::shared_ptr<Request>> mCurrentRequests;
