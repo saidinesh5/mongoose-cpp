@@ -25,6 +25,12 @@ struct MultipartData
     std::vector<Request::MultipartEntity> multipartEntities;
 };
 
+void sendErrorNow(struct mg_connection* c, int errorCode, const char* errorString)
+{
+    mg_printf(c, "HTTP/1.0 %d %s\r\nContent-Length: 0\r\n\r\n", errorCode, errorString);
+    c->flags |= MG_F_SEND_AND_CLOSE;
+}
+
 static struct mg_serve_http_opts sHttpOptions = {0};
 
 /**
@@ -112,6 +118,7 @@ void Server::ev_handler(struct mg_connection *c, int ev, void *p, void *ud)
             mg_printf(c, "%s",
                       "HTTP/1.0 404 Path not found\r\n"
                       "Content-Length: 0\r\n\r\n");
+            c->user_data = NULL;
             c->flags |= MG_F_SEND_AND_CLOSE;
             return;
         }
@@ -122,24 +129,28 @@ void Server::ev_handler(struct mg_connection *c, int ev, void *p, void *ud)
     {
         struct mg_http_multipart_part *mp = (struct mg_http_multipart_part *) p;
         struct MultipartData *data = (MultipartData*)c->user_data;
-        assert(data != NULL);
 
-        data->currentEntityBytesWritten = 0;
-        data->currentVariableData = "";
-
-        if (std::string(mp->file_name).size() > 0)
+        if (data != NULL)
         {
-            std::string tmpFile = server->tmpDir() + "/" + Utils::sanitizeFilename(mp->file_name);
-            data->currentFilePointer = fopen(tmpFile.c_str(), "wb");
-            if (data->currentFilePointer == NULL)
+            data->currentEntityBytesWritten = 0;
+            data->currentVariableData = "";
+
+            if (std::string(mp->file_name).size() > 0)
             {
-                mg_printf(c, "%s",
-                          "HTTP/1.0 500 Failed to open a file\r\n"
-                          "Content-Length: 0\r\n\r\n");
-                c->flags |= MG_F_SEND_AND_CLOSE;
-                free(data);
-                return;
+                std::string tmpFile = server->tmpDir() + "/" + Utils::sanitizeFilename(mp->file_name);
+                data->currentFilePointer = fopen(tmpFile.c_str(), "wb");
+                if (data->currentFilePointer == NULL)
+                {
+                    sendErrorNow(c, 500, "Failed to open a file");
+                    delete data;
+                    return;
+                }
             }
+        }
+        else
+        {
+            sendErrorNow(c, 500, "Internal Server Error");
+            return;
         }
 
         break;
@@ -148,35 +159,38 @@ void Server::ev_handler(struct mg_connection *c, int ev, void *p, void *ud)
     {
         struct mg_http_multipart_part *mp = (struct mg_http_multipart_part *) p;
         struct MultipartData *data = (MultipartData*)c->user_data;
-        assert(data != NULL);
 
-        if (server->uploadSizeLimit() < data->currentEntityBytesWritten + mp->data.len)
+        if (data  != NULL)
         {
-            mg_printf(c, "%s",
-                      "HTTP/1.0 413 Request Entity Too Large\r\n"
-                      "Content-Length: 0\r\n\r\n");
+            if (server->uploadSizeLimit() < data->currentEntityBytesWritten + mp->data.len)
+            {
+                sendErrorNow(c, 413, "Requested Entity Too Large");
+                return;
+            }
+
+            //If the uploaded data is a file, write it to a file.
+            if (std::string(mp->file_name).size() > 0)
+            {
+                if (fwrite(mp->data.p, 1, mp->data.len, data->currentFilePointer) != mp->data.len)
+                {
+                    sendErrorNow(c, 500, "Failed to write a file");
+                    return;
+                }
+            }
+            else
+            {
+                data->currentVariableData += std::string(mp->data.p, mp->data.len);
+            }
+
+            data->currentEntityBytesWritten += mp->data.len;
+        }
+        else
+        {
+            sendErrorNow(c, 500, "Internal Server Error");
             c->flags |= MG_F_SEND_AND_CLOSE;
             return;
         }
 
-        //If the uploaded data is a file, write it to a file.
-        if (std::string(mp->file_name).size() > 0)
-        {
-            if (fwrite(mp->data.p, 1, mp->data.len, data->currentFilePointer) != mp->data.len)
-            {
-                mg_printf(c, "%s",
-                          "HTTP/1.0 500 Failed to write to a file\r\n"
-                          "Content-Length: 0\r\n\r\n");
-                c->flags |= MG_F_SEND_AND_CLOSE;
-                return;
-            }
-        }
-        else
-        {
-            data->currentVariableData += std::string(mp->data.p, mp->data.len);
-        }
-
-        data->currentEntityBytesWritten += mp->data.len;
         break;
     }
     case MG_EV_HTTP_PART_END:
@@ -184,20 +198,29 @@ void Server::ev_handler(struct mg_connection *c, int ev, void *p, void *ud)
         struct mg_http_multipart_part *mp = (struct mg_http_multipart_part *) p;
         struct MultipartData *data = (MultipartData*)c->user_data;
 
-        data->multipartEntities.push_back(Request::MultipartEntity());
-        Request::MultipartEntity& entity = data->multipartEntities.back();
-        entity.fileName = mp->file_name;
-        entity.variableName = mp->var_name;
-
-        if (std::string(mp->file_name).size() > 0)
+        if (data != NULL)
         {
-            entity.filePath = server->tmpDir() + "/" + Utils::sanitizeFilename(entity.fileName);
-            fclose(data->currentFilePointer);
+            data->multipartEntities.push_back(Request::MultipartEntity());
+            Request::MultipartEntity& entity = data->multipartEntities.back();
+            entity.fileName = mp->file_name;
+            entity.variableName = mp->var_name;
+
+            if (std::string(mp->file_name).size() > 0)
+            {
+                entity.filePath = server->tmpDir() + "/" + Utils::sanitizeFilename(entity.fileName);
+                fclose(data->currentFilePointer);
+            }
+            else
+            {
+                entity.variableData = data->currentVariableData;
+            }
         }
         else
         {
-            entity.variableData = data->currentVariableData;
+            sendErrorNow(c, 500, "Internal Server Error");
+            return;
         }
+
 
         break;
     }
@@ -206,24 +229,32 @@ void Server::ev_handler(struct mg_connection *c, int ev, void *p, void *ud)
         struct mg_http_multipart_part *mp = (struct mg_http_multipart_part *) p;
         struct MultipartData *data = (MultipartData*)c->user_data;
 
-        auto request = server->mCurrentRequests[c];
-        auto response = server->mCurrentResponses[c];
-        assert(request);
-        assert(response);
-
-        //Argument: mg_http_multipart_part, var_name and file_name are NULL,
-        //status = 0 means request was properly closed, < 0 means connection was terminated
-        if (mp->status == 0
-            && server->handles(request->method(), request->url()))
-        {
-            request->setMultipartEntities(data->multipartEntities);
-            server->handleRequest(request, response);
-        }
-
         if (data != NULL)
         {
-            delete data;
-            c->user_data = NULL;
+            auto request = server->mCurrentRequests[c];
+            auto response = server->mCurrentResponses[c];
+            assert(request);
+            assert(response);
+
+            //Argument: mg_http_multipart_part, var_name and file_name are NULL,
+            //status = 0 means request was properly closed, < 0 means connection was terminated
+            if (mp->status == 0
+                && server->handles(request->method(), request->url()))
+            {
+                request->setMultipartEntities(data->multipartEntities);
+                server->handleRequest(request, response);
+            }
+
+            if (data != NULL)
+            {
+                delete data;
+                c->user_data = NULL;
+            }
+        }
+        else
+        {
+            sendErrorNow(c, 500, "Internal Server Error");
+            return;
         }
         break;
     }
