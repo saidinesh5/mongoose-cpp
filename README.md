@@ -22,26 +22,35 @@ the string "Hello bob". Default parameter value, if not provided, will be
 "... waht's your name ?". This is the `helloworld` program build in the examples:
 
 ```c++
-#include <stdlib.h>
-#include <signal.h>
-#include <mongoose/Server.h>
-#include <mongoose/WebController.h>
+#include <cassert>
+
+#include "Controller.h"
+#include "Request.h"
+#include "Response.h"
+#include "Server.h"
 
 using namespace std;
 using namespace Mongoose;
 
-class MyController : public WebController
+class MyController : public Controller
 {
-    public: 
-        void hello(Request &request, StreamResponse &response)
-        {
-            response << "Hello " << htmlEntities(request.get("name", "... what's your name ?")) << endl;
-        }
+public:
+    bool hello(std::weak_ptr<Request> request, std::weak_ptr<Response> response)
+    {
+        auto req = request.lock();
+        auto res = response.lock();
+        assert(req);
+        assert(res);
 
-        void setup()
-        {
-            addRoute("GET", "/hello", MyController, hello);
-        }
+        std::string body =  "Hello " + req->getVariable("name", "... what's your name ?\n");
+        return res->send(body);
+    }
+
+    void setup()
+    {
+        addRoute("GET", "/hello", MyController, hello);
+        addRoute("GET", "/", MyController, hello);
+    }
 };
 
 
@@ -51,12 +60,18 @@ int main()
     Server server("8080");
     server.registerController(&myController);
 
-    server.start(); 
+    signal(SIGINT, handle_signal);
 
-    while (true) {
-        server.poll();
+    server.start();
+
+    while (true)
+    {
+        server.poll(1000);
     }
+
+    return EXIT_SUCCESS;
 }
+
 ```
 
 # Building examples
