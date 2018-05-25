@@ -32,7 +32,7 @@ namespace Mongoose
              *
              * @return string the session ID for this request
              */
-            std::string getId(std::weak_ptr<Request> request, std::weak_ptr<Response> response);
+            std::string getId(const std::shared_ptr<Request> &request, const std::shared_ptr<Response> &response);
 
             /**
              * Gets the session for a certain request
@@ -42,7 +42,7 @@ namespace Mongoose
              *
              * @return Session the session corresponding
              */
-            Session* get(std::weak_ptr<Request> request, std::weak_ptr<Response> response);
+            Session* get(const std::shared_ptr<Request> &request, const std::shared_ptr<Response> &response);
 
             /**
              * Remove all the sessions older than age
@@ -51,7 +51,7 @@ namespace Mongoose
              */
             void garbageCollect(int oldAge = 3600);
 
-            bool preProcess(std::weak_ptr<Request> request, std::weak_ptr<Response> response) override;
+            bool preProcess(const std::shared_ptr<Request>& request, const std::shared_ptr<Response>& response) override;
 
             unsigned int gcDivisor() const { return mGcDivisor; }
             void setGcDivisor(unsigned int divisor) { mGcDivisor = divisor; }

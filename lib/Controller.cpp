@@ -23,7 +23,7 @@ namespace Mongoose
         mRoutes.clear();
     }
 
-    bool Controller::preProcess(std::weak_ptr<Request> request, std::weak_ptr<Response> response)
+    bool Controller::preProcess(const std::shared_ptr<Request> &request, const std::shared_ptr<Response> &response)
     {
         bool result = true;
 
@@ -35,28 +35,22 @@ namespace Mongoose
         return result;
     }
 
-    bool Controller::process(std::weak_ptr<Request> request, std::weak_ptr<Response> response)
+    bool Controller::process(const std::shared_ptr<Request> &request, const std::shared_ptr<Response> &response)
     {
-        auto req = request.lock();
-        if (!req)
-        {
-            return false;
-        }
-
         bool result = false;
 
 #ifdef ENABLE_REGEX_URL
         std::map<std::string, RequestHandler *>::iterator it;
         for (it=routes.begin(); it!=routes.end(); it++)
         {
-            if (request.match(it->first))
+            if (request->match(it->first))
             {
               result = it->second->process(request, response);
               break;
             }   
         }
 #else
-        std::string key = req->method() + ":" + req->url();
+        std::string key = request->method() + ":" + request->url();
         if (mRoutes.find(key) != mRoutes.end())
         {
             result = mRoutes[key](request, response);
@@ -73,7 +67,7 @@ namespace Mongoose
         return (mRoutes.find(key) != mRoutes.end());
     }
 
-    bool Controller::handleRequest(std::weak_ptr<Request> request, std::weak_ptr<Response> response)
+    bool Controller::handleRequest(const std::shared_ptr<Request> &request, const std::shared_ptr<Response> &response)
     {
         return preProcess(request, response)
                && process(request, response);

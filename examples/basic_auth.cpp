@@ -18,13 +18,8 @@ using namespace Mongoose;
 class MyController : public Controller
 {
 public:
-    bool hello(std::weak_ptr<Request> request, std::weak_ptr<Response> response)
+    bool hello(const std::shared_ptr<Request>& req, const std::shared_ptr<Response>& res)
     {
-        auto req = request.lock();
-        auto res = response.lock();
-        assert(req);
-        assert(res);
-
         std::string body;
         body = "Hello " + req->getVariable("name", "... what's your name ?\n");
         res->send(body);

@@ -119,7 +119,7 @@ public:
 private:
     static void ev_handler(struct mg_connection *c, int ev, void *p, void* ud);
 
-    bool handleRequest(std::weak_ptr<Request> request, std::weak_ptr<Response> response);
+    bool handleRequest(std::shared_ptr<Request> request, std::shared_ptr<Response> response);
 
     bool mIsRunning;
     struct mg_mgr *mManager{nullptr};

@@ -25,7 +25,7 @@ namespace Mongoose
             Server* server() const { return mServer; }
             void setServer(Server *server) { mServer = server; }
 
-            virtual bool preProcess(std::weak_ptr<Request> request, std::weak_ptr<Response> response) = 0;
+            virtual bool preProcess(const std::shared_ptr<Request>& request, const std::shared_ptr<Response>& response) = 0;
 
         protected:
             Server *mServer;

@@ -25,24 +25,19 @@ namespace Mongoose
         }
     }
 
-    std::string Sessions::getId(std::weak_ptr<Request> request, std::weak_ptr<Response> response)
+    std::string Sessions::getId(const std::shared_ptr<Request> &request, const std::shared_ptr<Response> &response)
     {
-        auto req = request.lock();
-        auto res = response.lock();
-        assert(req);
-        assert(res);
-
-        if (req->hasCookie(mKey)) {
-            return req->getCookie(mKey);
+        if (request->hasCookie(mKey)) {
+            return request->getCookie(mKey);
         } else {
 
             std::string newCookie = Utils::randomAlphanumericString(30);
-            res->setCookie(mKey, newCookie);
+            response->setCookie(mKey, newCookie);
             return newCookie;
         }
     }
 
-    Session* Sessions::get(std::weak_ptr<Request> request, std::weak_ptr<Response> response)
+    Session* Sessions::get(const std::shared_ptr<Request>& request, const std::shared_ptr<Response>& response)
     { 
         std::string id = getId(request, response);
         Session *session = NULL;
@@ -78,7 +73,7 @@ namespace Mongoose
         }
     }
 
-    bool Sessions::preProcess(std::weak_ptr<Request> request, std::weak_ptr<Response> response)
+    bool Sessions::preProcess(const std::shared_ptr<Request> &request, const std::shared_ptr<Response> &response)
     {
         mGcCounter++;
 

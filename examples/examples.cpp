@@ -23,28 +23,18 @@ class MyController : public Controller
     Sessions mSessions;
 
     public: 
-        bool hello(std::weak_ptr<Request> request, std::weak_ptr<Response> response)
+        bool hello(const std::shared_ptr<Request>& req, const std::shared_ptr<Response>& res)
         {
-            auto req = request.lock();
-            auto res = response.lock();
-            assert(req);
-            assert(res);
-
             std::stringstream body;
             body << "Hello " << req->getVariable("name", "... what's your name ?\n");
             res->send(body.str());
             return true;
         }
 
-        bool hello_delayed(std::weak_ptr<Request> request, std::weak_ptr<Response> response)
+        bool hello_delayed(const std::shared_ptr<Request>& req, const std::shared_ptr<Response>& res)
         {
             std::thread([=]
             {
-                auto req = request.lock();
-                auto res = response.lock();
-                assert(req);
-                assert(res);
-
                 int duration = std::stoi(req->getVariable("duration", "3"));
                 std::this_thread::sleep_for(std::chrono::seconds(duration));
                 res->send("Hello after " + std::to_string(duration) + " seconds\n");
@@ -53,13 +43,8 @@ class MyController : public Controller
             return true;
         }
 
-        bool form(std::weak_ptr<Request> request, std::weak_ptr<Response> response)
+        bool form(const std::shared_ptr<Request>& req, const std::shared_ptr<Response>& res)
         {
-            auto req = request.lock();
-            auto res = response.lock();
-            assert(req);
-            assert(res);
-
             std::stringstream responseBody;
             responseBody << "<form method=\"post\">" << std::endl;
             responseBody << "<input type=\"text\" name=\"test\" /><br >" << std::endl;
@@ -69,26 +54,16 @@ class MyController : public Controller
             return res->send(responseBody.str());
         }
 
-        bool formPost(std::weak_ptr<Request> request, std::weak_ptr<Response> response)
+        bool formPost(const std::shared_ptr<Request>& req, const std::shared_ptr<Response>& res)
         {
-            auto req = request.lock();
-            auto res = response.lock();
-            assert(req);
-            assert(res);
-
             std::stringstream responseBody;
             responseBody << "Test=" << req->getVariable("test", "(unknown)");
             return res->send(responseBody.str());
         }
 
-        bool session(std::weak_ptr<Request> request, std::weak_ptr<Response> response)
+        bool session(const std::shared_ptr<Request>& req, const std::shared_ptr<Response>& res)
         {
-            auto req = request.lock();
-            auto res = response.lock();
-            assert(req);
-            assert(res);
-
-            Session *session = mSessions.get(request, response);
+            Session *session = mSessions.get(req, res);
             std::stringstream responseBody;
 
             if (session->hasValue("try")) {
@@ -103,24 +78,19 @@ class MyController : public Controller
             return res->send(responseBody.str());
         }
 
-        bool forbid(std::weak_ptr<Request> request, std::weak_ptr<Response> response)
+        bool forbid(const std::shared_ptr<Request>& req, const std::shared_ptr<Response>& res)
         {
-            auto res = response.lock();
-            assert(res);
             res->setCode(HTTP_FORBIDDEN);
             return res->send("403 forbidden demo");
         }
 
-        bool exception(std::weak_ptr<Request> request, std::weak_ptr<Response> response)
+        bool exception(const std::shared_ptr<Request>& req, const std::shared_ptr<Response>& res)
         {
             throw std::string("Exception example");
         }
 
-        bool uploadForm(std::weak_ptr<Request> request, std::weak_ptr<Response> response)
+        bool uploadForm(const std::shared_ptr<Request>& req, const std::shared_ptr<Response>& res)
         {
-            auto res = response.lock();
-            assert(res);
-
             std::stringstream responseBody;
             responseBody << "<html>";
             responseBody << "<h1>File upload demo (don't forget to create a tmp/ directory)</h1>";
@@ -134,13 +104,8 @@ class MyController : public Controller
             return res->sendHtml(responseBody.str());
         }
 
-        bool upload(std::weak_ptr<Request> request, std::weak_ptr<Response> response)
+        bool upload(const std::shared_ptr<Request>& req, const std::shared_ptr<Response>& res)
         {
-            auto req = request.lock();
-            auto res = response.lock();
-            assert(req);
-            assert(res);
-
             std::stringstream responseBody;
             responseBody << "Your form variables: " << std::endl;
 
@@ -177,26 +142,16 @@ class MyController : public Controller
             addRoute("POST", "/upload", MyController, upload);
 
             //Generic register route
-            registerRoute("GET", "/hello_lambda", [=](std::weak_ptr<Request> request, std::weak_ptr<Response> response)
+            registerRoute("GET", "/hello_lambda", [=](const std::shared_ptr<Request>& req, const std::shared_ptr<Response>& res)
             {
-                auto req = request.lock();
-                auto res = response.lock();
-                assert(req);
-                assert(res);
-
                 res->send("Hello lambda " + req->getVariable("name", "... what's your name ?") + "\n");
                 return true;
             });
 
 #ifdef HAS_JSON11
             //Generic register route
-            registerRoute("GET", "/json", [=](std::weak_ptr<Request> request, std::weak_ptr<Response> response)
+            registerRoute("GET", "/json", [=](const std::shared_ptr<Request>& req, const std::shared_ptr<Response>& res)
             {
-                auto req = request.lock();
-                auto res = response.lock();
-                assert(req);
-                assert(res);
-
                 json11::Json body = json11::Json::object {
                     {"hello", "world"},
                     {"status", 5}

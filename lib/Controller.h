@@ -23,7 +23,7 @@ namespace Mongoose
     class Request;
     class Response;
 
-    typedef std::function<bool(std::weak_ptr<Request>, std::weak_ptr<Response>)> RequestHandler;
+    typedef std::function<bool(const std::shared_ptr<Request>&, const std::shared_ptr<Response>&)> RequestHandler;
 
     class Controller
     {
@@ -41,7 +41,7 @@ namespace Mongoose
              * @param Request - the incoming request to preProcess
              * @param Response - the response
              */
-            virtual bool preProcess(std::weak_ptr<Request> request, std::weak_ptr<Response> response);
+            virtual bool preProcess(const std::shared_ptr<Request>& request, const std::shared_ptr<Response>& response);
 
             /**
              * @brief process - Called to process a request
@@ -49,7 +49,7 @@ namespace Mongoose
              * @return Response the created response, or NULL if the controller
              *         does not handle this request
              */
-            virtual bool process(std::weak_ptr<Request> request, std::weak_ptr<Response> response);
+            virtual bool process(const std::shared_ptr<Request>& request, const std::shared_ptr<Response>& response);
 
             /**
               * @brief handles - check if this controller can handle a http method + url
@@ -66,7 +66,7 @@ namespace Mongoose
              * @return Response the created response, or NULL if the controller
              *         does not handle this request
              */
-            virtual bool handleRequest(std::weak_ptr<Request> request, std::weak_ptr<Response> response);
+            virtual bool handleRequest(const std::shared_ptr<Request>& request, const std::shared_ptr<Response>& response);
 
             /**
              * @brief server

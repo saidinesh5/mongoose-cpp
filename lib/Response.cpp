@@ -90,8 +90,12 @@ namespace Mongoose
         }
 
         std::string headers = headerString();
-        mg_printf(mConnection, "%s", headers.c_str());
-        mg_printf(mConnection, "%s", mBody.c_str());
+
+        if(mIsValid)
+        {
+            mg_printf(mConnection, "%s", headers.c_str());
+            mg_printf(mConnection, "%s", mBody.c_str());
+        }
         mConnection->flags |= MG_F_SEND_AND_CLOSE;
         mIsValid = false;
         return true;
@@ -105,7 +109,6 @@ namespace Mongoose
             mBody = body;
             return send();
         }
-
         return false;
     }
 
@@ -127,7 +130,6 @@ namespace Mongoose
             mBody = body;
             return send();
         }
-
         return false;
     }
 
@@ -151,7 +153,7 @@ namespace Mongoose
 
         FILE *fp = fopen(path.c_str(), "rb");
 
-        while ((n = mg_fread(buf, 1, sizeof(buf), fp)) > 0)
+        while (mIsValid && ((n = mg_fread(buf, 1, sizeof(buf), fp)) > 0))
         {
           mg_send(mConnection, buf, n);
         }

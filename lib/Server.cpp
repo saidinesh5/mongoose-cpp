@@ -365,19 +365,15 @@ void Server::deregisterController(Controller *c)
     }
 }
 
-bool Server::handleRequest(std::weak_ptr<Request> request, std::weak_ptr<Response> response)
+bool Server::handleRequest(std::shared_ptr<Request> request, std::shared_ptr<Response> response)
 {
     mRequests++;
 
     bool result = false;
-    auto req = request.lock();
-    auto res = response.lock();
-    assert(req);
-    assert(res);
 
     for (auto controller: mControllers)
     {
-        if (controller->handles(req->method(), req->url()))
+        if (controller->handles(request->method(), request->url()))
         {
             try
             {
@@ -388,9 +384,9 @@ bool Server::handleRequest(std::weak_ptr<Request> request, std::weak_ptr<Respons
                 result = false;
             }
 
-            if (res->isValid() && !result)
+            if (response->isValid() && !result)
             {
-                res->sendError("Server error trying to handle the request");
+                response->sendError("Server error trying to handle the request");
             }
             break;
         }
