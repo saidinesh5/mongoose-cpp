@@ -365,7 +365,7 @@ void Server::deregisterController(Controller *c)
     }
 }
 
-bool Server::handleRequest(std::shared_ptr<Request> request, std::shared_ptr<Response> response)
+bool Server::handleRequest(const std::shared_ptr<Request> &request, const std::shared_ptr<Response> &response)
 {
     mRequests++;
 

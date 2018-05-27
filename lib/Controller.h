@@ -18,7 +18,7 @@
  */
 namespace Mongoose
 {
-    class AbstractRequestPreprocessor;
+    class AbstractRequestCoprocessor;
     class Server;
     class Request;
     class Response;
@@ -38,18 +38,26 @@ namespace Mongoose
 
             /**
              * @brief preProcess - Called before a request is processed
-             * @param Request - the incoming request to preProcess
-             * @param Response - the response
+             * @param request - the incoming request to preProcess
+             * @param response - the response
              */
             virtual bool preProcess(const std::shared_ptr<Request>& request, const std::shared_ptr<Response>& response);
 
             /**
              * @brief process - Called to process a request
-             * @param Request the request
-             * @return Response the created response, or NULL if the controller
-             *         does not handle this request
+             * @param request the request
+             * @return response the response
              */
             virtual bool process(const std::shared_ptr<Request>& request, const std::shared_ptr<Response>& response);
+
+            /**
+             * @brief postProcess - Called after a request is processed
+             * @param request - the incoming request to postProcess
+             * @param response - the response - NOTE - that the response may not always be "valid" and do not attempt
+             * to use any response->send*() methods while post processing
+             * @return
+             */
+            virtual bool postProcess(const std::shared_ptr<Request>& request, const std::shared_ptr<Response>& response);
 
             /**
               * @brief handles - check if this controller can handle a http method + url
@@ -93,17 +101,17 @@ namespace Mongoose
             void setPrefix(const std::string& prefix);
 
             /**
-             * @brief registerPreprocessor - a pre processor can alter the request/response params before processing.
-             * Useful for keeping track of session variables etc...
+             * @brief registerCoprocessor - a co processor can alter the request/response params before/after processing.
+             * Useful for keeping track of session variables, altering error pages, logging requests/responses etc.
              * @param preprocessor
              */
-            void registerPreprocessor(AbstractRequestPreprocessor* preprocessor);
+            void registerCoprocessor(AbstractRequestCoprocessor* preprocessor);
 
             /**
-             * @brief deregisterPreprocessor - unregister preprocessor from executing
+             * @brief deregisterCoprocessor - unregister preprocessor from executing
              * @param preprocessor
              */
-            void deregisterPreprocessor(AbstractRequestPreprocessor* preprocessor);
+            void deregisterCoprocessor(AbstractRequestCoprocessor* preprocessor);
 
             /**
              * @brief registerRoute
@@ -136,7 +144,7 @@ namespace Mongoose
             std::string mPrefix;
             std::map<std::string, RequestHandler> mRoutes;
             std::vector<std::string> mUrls;
-            std::vector<AbstractRequestPreprocessor*> mPreprocessors;
+            std::vector<AbstractRequestCoprocessor*> mCoprocessors;
     };
 }
 

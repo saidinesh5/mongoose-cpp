@@ -31,7 +31,7 @@ set(HEADERS
     lib/Utils.h
     lib/Controller.h
     lib/Request.h
-    lib/AbstractRequestPreprocessor.h
+    lib/AbstractRequestCoprocessor.h
     lib/Response.h
     lib/Server.h
     lib/Session.h

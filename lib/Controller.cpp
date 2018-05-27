@@ -3,7 +3,7 @@
 
 #include "Controller.h"
 #include "Request.h"
-#include "AbstractRequestPreprocessor.h"
+#include "AbstractRequestCoprocessor.h"
 #include "Response.h"
 
 namespace Mongoose
@@ -27,9 +27,9 @@ namespace Mongoose
     {
         bool result = true;
 
-        for (int i = 0; i < mPreprocessors.size() && result; i++)
+        for (int i = 0; i < mCoprocessors.size() && result; i++)
         {
-            result = mPreprocessors[i]->preProcess(request, response);
+            result = mCoprocessors[i]->preProcess(request, response);
         }
 
         return result;
@@ -57,6 +57,18 @@ namespace Mongoose
         }
 #endif
         
+        return result;
+    }
+
+    bool Controller::postProcess(const std::shared_ptr<Request> &request, const std::shared_ptr<Response> &response)
+    {
+        bool result = true;
+
+        for (int i = 0; i < mCoprocessors.size() && result; i++)
+        {
+            result = mCoprocessors[i]->postProcess(request, response);
+        }
+
         return result;
     }
 
@@ -93,21 +105,21 @@ namespace Mongoose
         mPrefix = prefix;
     }
 
-    void Controller::registerPreprocessor(AbstractRequestPreprocessor *preprocessor)
+    void Controller::registerCoprocessor(AbstractRequestCoprocessor *preprocessor)
     {
-        if (std::find(mPreprocessors.begin(), mPreprocessors.end(), preprocessor) == mPreprocessors.end())
+        if (std::find(mCoprocessors.begin(), mCoprocessors.end(), preprocessor) == mCoprocessors.end())
         {
-            mPreprocessors.push_back(preprocessor);
+            mCoprocessors.push_back(preprocessor);
         }
     }
 
-    void Controller::deregisterPreprocessor(AbstractRequestPreprocessor *preprocessor)
+    void Controller::deregisterCoprocessor(AbstractRequestCoprocessor *preprocessor)
     {
-        auto position = std::find(mPreprocessors.begin(), mPreprocessors.end(), preprocessor);
+        auto position = std::find(mCoprocessors.begin(), mCoprocessors.end(), preprocessor);
 
-        if (position != mPreprocessors.end())
+        if (position != mCoprocessors.end())
         {
-            mPreprocessors.erase(position);
+            mCoprocessors.erase(position);
         }
     }
             

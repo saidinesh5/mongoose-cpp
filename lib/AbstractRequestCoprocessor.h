@@ -10,10 +10,10 @@ namespace Mongoose
 {
     class Server;
     class Controller;
-    class AbstractRequestPreprocessor
+    class AbstractRequestCoprocessor
     {
         public:
-            AbstractRequestPreprocessor(Controller *controller = nullptr, Server *server = nullptr):
+            AbstractRequestCoprocessor(Controller *controller = nullptr, Server *server = nullptr):
                 mController(controller),
                 mServer(server)
             {
@@ -25,7 +25,8 @@ namespace Mongoose
             Server* server() const { return mServer; }
             void setServer(Server *server) { mServer = server; }
 
-            virtual bool preProcess(const std::shared_ptr<Request>& request, const std::shared_ptr<Response>& response) = 0;
+            virtual bool preProcess(const std::shared_ptr<Request>& request, const std::shared_ptr<Response>& response) { return true; }
+            virtual bool postProcess(const std::shared_ptr<Request>& request, const std::shared_ptr<Response>& response) { return true; }
 
         protected:
             Server *mServer;

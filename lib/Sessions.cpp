@@ -8,7 +8,7 @@ namespace Mongoose
 {
     Sessions::Sessions(const std::string &key, Controller *controller, Server *server)
         :
-          AbstractRequestPreprocessor(controller, server),
+          AbstractRequestCoprocessor(controller, server),
           mGcDivisor(100),
           mGcCounter(0),
           mSessions(),

@@ -4,7 +4,7 @@
 #include <memory>
 
 #include "Request.h"
-#include "AbstractRequestPreprocessor.h"
+#include "AbstractRequestCoprocessor.h"
 #include "Response.h"
 #include "Session.h"
 
@@ -14,7 +14,7 @@
  */ 
 namespace Mongoose
 {
-    class Sessions: public AbstractRequestPreprocessor
+    class Sessions: public AbstractRequestCoprocessor
     {
         public:
             Sessions(const std::string& key = "sessid",
