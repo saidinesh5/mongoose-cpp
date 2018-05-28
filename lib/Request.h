@@ -62,7 +62,7 @@ public:
 
 private:
 
-    bool mIsValid;
+    std::atomic_bool mIsValid;
     bool mIsMultipartRequest;
     std::string mMethod;
     std::string mUrl;
