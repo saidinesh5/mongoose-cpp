@@ -8,6 +8,15 @@ option (ENABLE_REGEX_URL "Enable url regex matching dispatcher" OFF)
 
 set (JSON11_DIR "${PROJECT_SOURCE_DIR}/../json11" CACHE STRING "Json11 (https://github.com/dropbox/json11) directory")
 
+if (CMAKE_VERSION VERSION_LESS "3.1")
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
+    endif ()
+else ()
+    set (CMAKE_CXX_STANDARD 11)
+endif ()
+
+
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules")
 include(GetVersionFromGitTag)
 
