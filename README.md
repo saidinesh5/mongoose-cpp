@@ -1,7 +1,7 @@
 # Mongoose-C++
 
 Mongoose-C++ is a C++ wrapper around the popular [mongoose](https://github.com/cesanta/mongoose/)
-lightweight web server. This started off as a fork of https://github.com/Gregwar/mongoose-cpp. It is now moved to it's own repo, because mongoose-cpp itself is a fork of upstream mongoose - which we now use as vendor/mongoose submodule.
+lightweight web server. This started off as a fork of https://github.com/Gregwar/mongoose-cpp , to add support for threading. It is now moved to it's own repo, because mongoose-cpp itself is a fork of upstream mongoose - which we now use as vendor/mongoose git submodule.
 
 # Features
 
@@ -16,13 +16,18 @@ lightweight web server. This started off as a fork of https://github.com/Gregwar
 # Hello world
 
 Here is an example, this will serve the static files from `www/` directory (which
-is the default setting) and the `/hello` page will be answered by a controller which
+is the default setting).
+* The `/hello` page will be answered by a controller which
 will display the GET `name` variable, for instance `/hello?name=bob` will display
 the string "Hello bob". Default parameter value, if not provided, will be
-"... waht's your name ?". This is the `helloworld` program build in the examples:
+"... waht's your name ?".:
+
+* The `/hello_delayed` page will be answered by a controller which answers the request after a delay specified by the GET `duration` variable. Default parameter value, if not provided, will be 3 seconds.
 
 ```c++
 #include <cassert>
+#include <chrono>
+#include <thread>
 
 #include "Controller.h"
 #include "Request.h"
@@ -40,10 +45,26 @@ public:
         std::string body =  "Hello " + req->getVariable("name", "... what's your name ?\n");
         return res->send(body);
     }
+    
+    bool hello_delayed(const std::shared_ptr<Request>& req, const std::shared_ptr<Response>& res)
+    {
+        //This is just a toy example.
+        //Instead of spawning a new thread per incoming request,
+        //you may use your fancy threadpool library here.
+        std::thread([=]
+        {
+            int duration = std::stoi(req->getVariable("duration", "3"));
+            std::this_thread::sleep_for(std::chrono::seconds(duration));
+            res->send("Hello after " + std::to_string(duration) + " seconds\n");
+        }).detach();
+
+        return true;
+    }
 
     void setup()
     {
         addRoute("GET", "/hello", MyController, hello);
+        addRoute("GET", "/hello_delayed", MyController, hello_delayed);
         addRoute("GET", "/", MyController, hello);
     }
 };
@@ -93,7 +114,8 @@ Note that this depends on C++11.
 # Development
 
 We maintain a patched fork The upstream mongoose web server library is present as a submodule in vendor/mongoose.
-It is patched to enable multithreaded operations on mongoose buffers
+It is patched to enable multithreaded operations on mongoose buffers.
+We also use the excellent libyuarel to parse the querystring.
 
 # License
 
