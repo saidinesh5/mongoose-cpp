@@ -5,6 +5,7 @@
 #include <map>
 #include <memory>
 #include <vector>
+#include <string>
 
 //Helper define for binding class methods
 #define addRoute(httpMethod, httpRoute, className, methodName) \
